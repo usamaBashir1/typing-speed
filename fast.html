@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+
+<!-- ✅ CRITICAL MOBILE FIX -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Typing Speed Test</title>
+
+<style>
+/* ===== GLOBAL FIXES ===== */
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; /* prevents sideways stretch */
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: #0f172a;
+  color: white;
+  text-align: center;
+  padding: 20px;
+}
+
+/* ===== HEADER ===== */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.header img {
+  width: clamp(40px, 6vw, 60px);
+  height: auto;
+  border-radius: 50%;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(22px, 4vw, 32px);
+}
+
+/* ===== WORD BOX ===== */
+#wordsBox {
+  width: min(95%, 900px);
+  margin: 20px auto;
+  padding: clamp(14px, 3vw, 24px);
+  background: #111827;
+  border-radius: 12px;
+  line-height: 2;
+  font-size: clamp(16px, 2.5vw, 22px);
+  min-height: 90px;
+  overflow: hidden;
+}
+
+.word {
+  padding: 4px 6px;
+  margin: 2px;
+  display: inline-block;
+  border-radius: 6px;
+}
+
+.current { background: #334155; }
+.correct { color: #22c55e; }
+.wrong { color: #ef4444; }
+
+/* ===== INPUT ===== */
+#typingInput {
+  width: min(95%, 600px);
+  padding: 16px;
+  font-size: 16px; /* ✅ prevents mobile zoom bug */
+  border-radius: 12px;
+  border: none;
+  outline: none;
+  margin-top: 18px;
+}
+
+/* ===== INFO ===== */
+#info {
+  margin-top: 15px;
+  font-size: clamp(15px, 2.5vw, 18px);
+  line-height: 1.6;
+}
+
+#result {
+  margin-top: 25px;
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: bold;
+}
+
+#restartBtn {
+  margin-top: 15px;
+  padding: 12px 22px;
+  font-size: clamp(16px, 3vw, 18px);
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+}
+
+/* ===== ABOUT ===== */
+.about {
+  margin-top: 60px;
+  padding: 30px 20px;
+  background: #111827;
+  border-top: 2px solid #1f2937;
+}
+
+.about img {
+  width: min(200px, 60%);
+  height: auto;
+  margin-bottom: 15px;
+  border-radius: 20px;
+}
+
+.about p {
+  max-width: 700px;
+  margin: auto;
+  font-size: clamp(15px, 2.5vw, 18px);
+  line-height: 1.6;
+}
+
+.about a {
+  color: #22c55e;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.about a:hover {
+  text-decoration: underline;
+}
+</style>
+</head>
+
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="header">
+  <!-- 🔴 REPLACE WITH YOUR REAL LOGO FILE -->
+  <img src="logo.jpg" alt="Logo">
+  <h1>Typing Speed Test</h1>
+</div>
+
+<div id="timer">Time: 60</div>
+<div id="wordsBox"></div>
+
+<input id="typingInput"
+ placeholder="Start typing here..."
+ autocomplete="off"
+ autocorrect="off"
+ autocapitalize="off"
+ spellcheck="false">
+
+<div id="info">
+Correct: <span id="correctCount">0</span> |
+Wrong: <span id="wrongCount">0</span> |
+Accuracy: <span id="accuracy">0%</span>
+</div>
+
+<button id="restartBtn">🔄 Restart</button>
+<div id="result"></div>
+
+<!-- ===== ABOUT SECTION ===== -->
+<div class="about">
+
+  <!-- 🔴 REPLACE WITH YOUR BIG LOGO -->
+  <img src="logo.jpg" alt="Big Logo">
+
+  <p>
+    This is a test website used to improve your typing skills.
+    Built by <strong>Elite Student Squad ESS Led by Usama Bashir, A computer Students based on Bosaso,Somalia</strong> <br> using HTML, CSS, and JavaScript.
+    Get in touch on WhatsApp for more information:
+    <br>
+
+    <a href="https://wa.me/2520906607949" target="_blank">
+      📱 +252 0906607949
+    </a>
+  </p>
+
+</div>
+
+<script>
+// ================= WORD LIST =================
+const commonWords = [
+"the","be","to","of","and","a","in","that","have","I",
+"it","for","not","on","with","he","as","you","do","at",
+"this","but","his","by","from","they","we","say","her","she",
+"or","an","will","my","one","all","would","there","their","is",
+"are","was","were","been","has","had","did","can","could","should",
+"may","might","must","about","after","again","against","air","all",
+"along","also","always","another","any","around","because","before",
+"below","between","both","came","come","each","even","every","few",
+"find","first","found","give","great","group","hand","high","home",
+"house","important","keep","kind","know","large","last","left","life",
+"line","little","long","made","make","man","many","may","mean"
+];
+
+const WORDS_PER_ROW = 15;
+
+let words = [];
+let rowStart = 0;
+let currentIndex = 0;
+let correct = 0;
+let wrong = 0;
+let timeLeft = 60;
+let timerStarted = false;
+let timerInterval;
+
+function generateWordPool() {
+  words = [];
+  for (let i = 0; i < 100; i++) {
+    words.push(commonWords[Math.floor(Math.random() * commonWords.length)]);
+  }
+}
+
+function renderRow() {
+  const box = document.getElementById("wordsBox");
+  box.innerHTML = "";
+
+  for (let i = rowStart; i < rowStart + WORDS_PER_ROW && i < words.length; i++) {
+    const span = document.createElement("span");
+    span.textContent = words[i];
+    span.classList.add("word");
+
+    if (i === currentIndex) span.classList.add("current");
+    box.appendChild(span);
+  }
+}
+
+function startTimer() {
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    document.getElementById("timer").textContent = "Time: " + timeLeft;
+
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      finishTest();
+    }
+  }, 1000);
+}
+
+function updateAccuracy() {
+  const total = correct + wrong;
+  const acc = total === 0 ? 0 : Math.round((correct / total) * 100);
+  document.getElementById("accuracy").textContent = acc + "%";
+}
+
+function finishTest() {
+  document.getElementById("typingInput").disabled = true;
+  const wpm = correct;
+
+  document.getElementById("result").innerHTML =
+    `🚀 Speed: ${wpm} WPM<br>
+     ✅ Correct: ${correct}<br>
+     ❌ Wrong: ${wrong}`;
+}
+
+function restartTest() {
+  clearInterval(timerInterval);
+
+  correct = 0;
+  wrong = 0;
+  currentIndex = 0;
+  rowStart = 0;
+  timeLeft = 60;
+  timerStarted = false;
+
+  document.getElementById("typingInput").value = "";
+  document.getElementById("typingInput").disabled = false;
+  document.getElementById("timer").textContent = "Time: 60";
+  document.getElementById("correctCount").textContent = 0;
+  document.getElementById("wrongCount").textContent = 0;
+  document.getElementById("accuracy").textContent = "0%";
+  document.getElementById("result").textContent = "";
+
+  generateWordPool();
+  renderRow();
+}
+
+const input = document.getElementById("typingInput");
+
+input.addEventListener("input", () => {
+  const value = input.value;
+
+  if (!timerStarted && value.length > 0) {
+    startTimer();
+    timerStarted = true;
+  }
+
+  if (value.endsWith(" ")) {
+    const typedWord = value.trim();
+    const currentWord = words[currentIndex];
+    const spans = document.querySelectorAll(".word");
+    const spanIndex = currentIndex - rowStart;
+    const currentSpan = spans[spanIndex];
+
+    if (typedWord === currentWord) {
+      currentSpan.classList.add("correct");
+      correct++;
+      document.getElementById("correctCount").textContent = correct;
+    } else {
+      currentSpan.classList.add("wrong");
+      wrong++;
+      document.getElementById("wrongCount").textContent = wrong;
+    }
+
+    updateAccuracy();
+
+    currentSpan.classList.remove("current");
+    currentIndex++;
+
+    if (currentIndex >= rowStart + WORDS_PER_ROW) {
+      rowStart += WORDS_PER_ROW;
+      renderRow();
+    } else {
+      const nextSpan = document.querySelectorAll(".word")[currentIndex - rowStart];
+      if (nextSpan) nextSpan.classList.add("current");
+    }
+
+    input.value = "";
+  }
+});
+
+document.getElementById("restartBtn").addEventListener("click", restartTest);
+
+generateWordPool();
+renderRow();
+</script>
+
+</body>
+</html>
